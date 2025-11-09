@@ -27,9 +27,12 @@ interface Payment {
   destination: string;
   transactionHash?: string;
   memo?: string;
-  status: "pending" | "completed" | "failed";
+  status: "pending" | "completed" | "failed" | "active";
   paymentRequestId?: string;
   isPaymentRequest: boolean;
+  title?: string;
+  content?: string;
+  isPost?: boolean;
   createdAt: string;
 }
 
@@ -133,8 +136,8 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const copyPaymentLink = async (paymentRequestId: string) => {
-    const link = `${window.location.origin}/pay/${paymentRequestId}`;
+  const copyPaymentLink = async (paymentRequestId: string, isPost?: boolean) => {
+    const link = `${window.location.origin}${isPost ? '/post' : '/pay'}/${paymentRequestId}`;
     try {
       await navigator.clipboard.writeText(link);
       setCopiedLink(paymentRequestId);
@@ -159,6 +162,7 @@ export const Dashboard: React.FC = () => {
       case 'completed': return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
       case 'pending': return <Clock className="h-4 w-4 text-amber-600" />;
       case 'failed': return <XCircle className="h-4 w-4 text-rose-600" />;
+      case 'active': return <Sparkles className="h-4 w-4 text-blue-600" />;
       default: return null;
     }
   };
@@ -173,7 +177,7 @@ export const Dashboard: React.FC = () => {
 
   const pendingRequests = payments.filter(p => p.isPaymentRequest && p.status === 'pending').length;
 
-  const activePayments = payments.filter(p => p.isPaymentRequest && p.status === 'pending');
+  const activePayments = payments.filter(p => p.isPaymentRequest && (p.status === 'pending' || p.status === 'active'));
 
   if (!address) {
     return (
@@ -466,14 +470,20 @@ export const Dashboard: React.FC = () => {
               </div>
             ) : (
               activePayments.map((payment, index) => (
-                <div key={`active-${payment.id || index}`} className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 hover:border-amber-300 transition-all">
+                <div key={`active-${payment.id || index}`} className={`bg-gradient-to-br ${payment.isPost ? 'from-blue-50 to-indigo-50 border-blue-200 hover:border-blue-300' : 'from-amber-50 to-orange-50 border-amber-200 hover:border-amber-300'} rounded-2xl p-6 transition-all`}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                        <Clock className="h-5 w-5 text-amber-600" />
+                      <div className={`w-10 h-10 ${payment.isPost ? 'bg-blue-100' : 'bg-amber-100'} rounded-xl flex items-center justify-center`}>
+                        {payment.isPost ? (
+                          <Receipt className="h-5 w-5 text-blue-600" />
+                        ) : (
+                          <Clock className="h-5 w-5 text-amber-600" />
+                        )}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">Pending Payment Request</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {payment.isPost ? 'Protected Post' : 'Pending Payment Request'}
+                        </p>
                         <p className="text-xs text-gray-600">Created {formatDate(payment.createdAt)}</p>
                       </div>
                     </div>
@@ -483,24 +493,31 @@ export const Dashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {payment.memo && (
-                    <div className="mb-4 p-3 bg-white/60 rounded-lg border border-amber-100">
+                  {payment.title && (
+                    <div className="mb-4 p-3 bg-white/60 rounded-lg border border-current">
+                      <p className="text-xs text-gray-600 mb-1">Title</p>
+                      <p className="text-sm text-gray-900 font-medium">{payment.title}</p>
+                    </div>
+                  )}
+
+                  {payment.memo && !payment.isPost && (
+                    <div className="mb-4 p-3 bg-white/60 rounded-lg border border-current">
                       <p className="text-xs text-gray-600 mb-1">Description</p>
                       <p className="text-sm text-gray-900">{payment.memo}</p>
                     </div>
                   )}
 
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-amber-100">
+                    <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-current">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <Link2 className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <code className="text-xs font-mono text-gray-700 truncate">
-                          /pay/{payment.paymentRequestId}
+                          {payment.isPost ? `/post/${payment.paymentRequestId}` : `/pay/${payment.paymentRequestId}`}
                         </code>
                       </div>
                       <button
-                        onClick={() => copyPaymentLink(payment.paymentRequestId!)}
-                        className="cursor-pointer flex-shrink-0 ml-2 p-2 hover:bg-amber-100 rounded-lg transition-colors"
+                        onClick={() => copyPaymentLink(payment.paymentRequestId!, payment.isPost)}
+                        className={`cursor-pointer flex-shrink-0 ml-2 p-2 rounded-lg transition-colors ${payment.isPost ? 'hover:bg-blue-100' : 'hover:bg-amber-100'}`}
                       >
                         {copiedLink === payment.paymentRequestId ? (
                           <Check className="h-4 w-4 text-emerald-600" />
@@ -511,12 +528,12 @@ export const Dashboard: React.FC = () => {
                     </div>
 
                     <a
-                      href={`/pay/${payment.paymentRequestId}`}
+                      href={payment.isPost ? `/post/${payment.paymentRequestId}` : `/pay/${payment.paymentRequestId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all text-sm font-medium"
                     >
-                      View Payment Page
+                      {payment.isPost ? 'View Post' : 'View Payment Page'}
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </div>
@@ -548,7 +565,7 @@ export const Dashboard: React.FC = () => {
                       {getStatusIcon(payment.status)}
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {payment.isPaymentRequest ? 'Payment Request' : 'Payment Sent'}
+                          {payment.isPost ? 'Protected Post Created' : payment.isPaymentRequest ? 'Payment Request' : 'Payment Sent'}
                         </p>
                         <p className="text-xs text-gray-500">{formatDate(payment.createdAt)}</p>
                       </div>
@@ -558,7 +575,13 @@ export const Dashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {payment.memo && (
+                  {payment.title && (
+                    <p className="text-sm text-gray-600 mb-2 bg-blue-50 p-3 rounded-lg font-medium">
+                      {payment.title}
+                    </p>
+                  )}
+
+                  {payment.memo && !payment.isPost && (
                     <p className="text-sm text-gray-600 mb-3 bg-gray-50 p-3 rounded-lg">
                       {payment.memo}
                     </p>
@@ -577,6 +600,17 @@ export const Dashboard: React.FC = () => {
                         className="ml-auto flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
                       >
                         View
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    {payment.isPost && (
+                      <a
+                        href={`/post/${payment.paymentRequestId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto flex items-center gap-1 text-green-600 hover:text-green-700 font-medium"
+                      >
+                        View Post
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     )}

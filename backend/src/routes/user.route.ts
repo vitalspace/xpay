@@ -18,7 +18,7 @@ export const userRoutes = new Elysia({
       avatar: t.Optional(t.String()),
       banner: t.Optional(t.String()),
       username: t.Optional(t.String({ maxLength: 50 })),
-      email: t.Optional(t.Union([t.Literal(""), t.String({ format: "email" })])),
+      email: t.Optional(t.String()),
       bio: t.Optional(t.String({ maxLength: 160 })),
     }),
   })
@@ -31,7 +31,7 @@ export const userRoutes = new Elysia({
     body: t.Object({
       address: t.String(),
       username: t.Optional(t.String({ maxLength: 50 })),
-      email: t.Optional(t.Union([t.Literal(""), t.String({ format: "email" })])),
+      email: t.Optional(t.String()),
       avatar: t.Optional(t.String({})),
       banner: t.Optional(t.String({})),
       bio: t.Optional(t.String({ maxLength: 160 })),

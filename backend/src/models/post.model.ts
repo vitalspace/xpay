@@ -27,8 +27,5 @@ const PostSchema = new Schema<IPost>(
   { timestamps: true }
 );
 
-// Indexes for efficient searches
-PostSchema.index({ userId: 1, createdAt: -1 });
-
 const Post = mongoose.model<IPost>("Post", PostSchema);
 export default Post;

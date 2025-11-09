@@ -14,8 +14,8 @@ const UserSchema = new Schema<IUser>(
     address: { type: String, required: true, unique: true },
     avatar: { type: String, default: "" },
     banner: { type: String, default: "" },
-    username: { type: String, unique: true, default: "" },
-    email: { type: String, unique: true, default: "" },
+    username: { type: String, default: "" },
+    email: { type: String, default: "" },
     bio: { type: String, default: "" },
   },
   { timestamps: true }

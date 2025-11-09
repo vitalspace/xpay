@@ -1,5 +1,6 @@
 import { Cerebras } from '@cerebras/cerebras_cloud_sdk';
 import Payment from '../models/payment.model.js';
+import Post from '../models/post.model.js';
 import User from '../models/user.model.js';
 
 const cerebras = new Cerebras({
@@ -24,14 +25,17 @@ export const generateAnalytics = async (userAddress: string) => {
     // Get user's payment data
     const payments = await Payment.find({ userId: user._id }).sort({ createdAt: -1 });
 
-    // If no payments, return basic analytics
-    if (payments.length === 0) {
+    // Get user's posts
+    const posts = await Post.find({ userId: user._id }).sort({ createdAt: -1 });
+
+    // If no payments or posts, return basic analytics
+    if (payments.length === 0 && posts.length === 0) {
       return {
-        paymentPatterns: "No payment data available yet. Start making payments to see insights.",
+        paymentPatterns: "No payment data available yet. Start making payments or creating posts to see insights.",
         successRate: "No payments to analyze",
         activeDays: "No activity recorded",
         incomeVsExpenses: "No financial data available",
-        recommendations: "Create your first payment to unlock AI analytics",
+        recommendations: "Create your first payment or post to unlock AI analytics",
         anomalies: "No data to analyze"
       };
     }
@@ -48,12 +52,15 @@ export const generateAnalytics = async (userAddress: string) => {
     const totalSent = sentPayments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
 
     // For now, return calculated analytics without AI
+    const totalPosts = posts.length;
+    const totalActivities = totalPayments + totalPosts;
+
     return {
-      paymentPatterns: `You have ${totalPayments} total payments. ${receivedPayments.length} incoming and ${sentPayments.length} outgoing transactions.`,
-      successRate: `${successRate}% of your payments are completed successfully (${completedPayments}/${totalPayments}).`,
-      activeDays: "Payment activity analysis available with more data.",
-      incomeVsExpenses: `You've received ${totalReceived.toFixed(2)} XLM and sent ${totalSent.toFixed(2)} XLM. Net: ${(totalReceived - totalSent).toFixed(2)} XLM.`,
-      recommendations: successRate < 80 ? "Consider reviewing pending payments to improve completion rate." : "Your payment completion rate is excellent!",
+      paymentPatterns: `You have ${totalActivities} total activities: ${totalPayments} payments and ${totalPosts} protected posts. ${receivedPayments.length} incoming payments and ${sentPayments.length} outgoing transactions.`,
+      successRate: totalPayments > 0 ? `${successRate}% of your payments are completed successfully (${completedPayments}/${totalPayments}).` : "No payments to analyze for success rate.",
+      activeDays: totalPosts > 0 ? `You've created ${totalPosts} protected posts to monetize your content.` : "Payment activity analysis available with more data.",
+      incomeVsExpenses: `You've received ${totalReceived.toFixed(2)} XLM and sent ${totalSent.toFixed(2)} XLM. Net: ${(totalReceived - totalSent).toFixed(2)} XLM. ${totalPosts > 0 ? `Plus ${totalPosts} monetized posts.` : ''}`,
+      recommendations: successRate < 80 && totalPayments > 0 ? "Consider reviewing pending payments to improve completion rate." : totalPosts > 0 ? "Your content monetization strategy is active!" : "Your payment completion rate is excellent!",
       anomalies: "No anomalies detected in current payment patterns."
     };
 
