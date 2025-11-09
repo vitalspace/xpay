@@ -48,17 +48,8 @@ export const PayRequest: React.FC = () => {
 
   const loadPaymentRequest = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/v1/payment-request/${paymentRequestId}`, {
-        headers: address ? { 'x-user-address': address } : {},
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPaymentRequest(data);
-      } else {
-        // Other error
-        setToast({ message: "Payment request not found or expired", type: 'error' });
-      }
+      const data = await paymentService.getPaymentRequest(paymentRequestId!, address);
+      setPaymentRequest(data);
     } catch (error) {
       console.error("Error loading payment request:", error);
       setToast({ message: "Payment request not found or expired", type: 'error' });
