@@ -2,6 +2,7 @@ import { Context } from "elysia";
 import Payment from "../models/payment.model.js";
 import { IPayment } from "../types/";
 import User from "../models/user.model.js";
+import Post from "../models/post.model.js";
 
 export const createPayment = async (ctx: Context) => {
   try {
@@ -68,12 +69,39 @@ export const getPaymentsByUser = async (ctx: Context) => {
       return { message: "User not found" };
     }
 
+    // Get payments (including payment requests)
     const payments = await Payment.find({ userId: user._id }).sort({
       createdAt: -1,
     });
 
+    // Get posts created by the user
+    const posts = await Post.find({ userId: user._id }).sort({
+      createdAt: -1,
+    });
+
+    // Convert posts to payment-like format for frontend compatibility
+    const postsAsPayments = posts.map(post => ({
+      id: post.id,
+      amount: post.amount,
+      asset: post.asset,
+      destination: post.destination,
+      memo: post.content, // Use content as memo for display
+      status: "active" as const, // Posts are always "active"
+      paymentRequestId: post.postId,
+      isPaymentRequest: true, // Treat posts as payment requests
+      title: post.title,
+      content: post.content,
+      createdAt: post.createdAt,
+      isPost: true, // Flag to identify posts
+    }));
+
+    // Combine payments and posts
+    const allItems = [...payments, ...postsAsPayments].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
     ctx.set.status = 200;
-    return JSON.stringify({ payments });
+    return JSON.stringify({ payments: allItems });
   } catch (error) {
     console.error("Error getting payments:", error);
     ctx.set.status = 500;
