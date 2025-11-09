@@ -1,0 +1,20 @@
+{
+  "name": "backend",
+  "version": "1.0.50",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "dependencies": {
+    "@cerebras/cerebras_cloud_sdk": "^1.59.0",
+    "@elysiajs/cors": "^1.4.0",
+    "@stellar/stellar-sdk": "^14.3.1",
+    "elysia": "latest",
+    "mongoose": "^8.19.3",
+    "stellar-sdk": "^13.3.0"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "module": "src/index.js"
+}
