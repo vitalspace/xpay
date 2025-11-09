@@ -1,11 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 // Base API configuration
-const API_BASE_URL = "http://localhost:4000/api/v1";
 
 // Create axios instance with default config
 const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api/v1",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -24,7 +23,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for handling common errors
@@ -39,7 +38,7 @@ api.interceptors.response.use(
       // Could redirect to login page here
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // API endpoints
@@ -56,7 +55,7 @@ export const userService = {
 
   updateUser: async (
     userId: string,
-    userData: Partial<{ name: string; email: string }>
+    userData: Partial<{ name: string; email: string }>,
   ) => {
     const response = await api.put(`/users/${userId}`, userData);
     return response.data;
@@ -99,8 +98,14 @@ export const paymentService = {
     return response.data;
   },
 
-  updatePaymentStatus: async (transactionHash: string, status: "pending" | "completed" | "failed") => {
-    const response = await api.put("/update-payment-status", { transactionHash, status });
+  updatePaymentStatus: async (
+    transactionHash: string,
+    status: "pending" | "completed" | "failed",
+  ) => {
+    const response = await api.put("/update-payment-status", {
+      transactionHash,
+      status,
+    });
     return response.data;
   },
 
@@ -111,7 +116,10 @@ export const paymentService = {
     destination: string;
     memo?: string;
   }) => {
-    const response = await api.post("/create-payment-request", paymentRequestData);
+    const response = await api.post(
+      "/create-payment-request",
+      paymentRequestData,
+    );
     return response.data;
   },
 
@@ -127,9 +135,32 @@ export const paymentService = {
   },
 
   getPost: async (postId: string, userAddress?: string) => {
-    const params = userAddress ? { userAddress } : {};
-    const response = await api.get(`/post/${postId}`, { params });
-    return response.data;
+    const headers = userAddress ? { "x-user-address": userAddress } : {};
+    const response = await api.get(`/post/${postId}`, {
+      headers,
+      validateStatus: (status) => status === 200 || status === 402,
+    });
+
+    if (response.status === 402) {
+      // Payment required
+      const data = response.data;
+      return {
+        paymentRequestId: postId,
+        amount: data.paymentDetails.amount,
+        asset: data.paymentDetails.asset,
+        destination: data.paymentDetails.destination,
+        memo: undefined,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        userAddress: "",
+        title: data.paymentDetails.title,
+        content: undefined, // Content not available until payment
+        hasAccess: false,
+      };
+    } else {
+      // Has access or is creator
+      return response.data;
+    }
   },
 
   completePostPayment: async (data: {
@@ -142,8 +173,10 @@ export const paymentService = {
   },
 
   getPaymentRequest: async (paymentRequestId: string, userAddress?: string) => {
-    const headers = userAddress ? { 'x-user-address': userAddress } : {};
-    const response = await api.get(`/payment-request/${paymentRequestId}`, { headers });
+    const headers = userAddress ? { "x-user-address": userAddress } : {};
+    const response = await api.get(`/payment-request/${paymentRequestId}`, {
+      headers,
+    });
     return response.data;
   },
 
