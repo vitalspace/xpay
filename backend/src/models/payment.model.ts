@@ -38,9 +38,5 @@ const PaymentSchema = new Schema<IPayment>(
   { timestamps: true }
 );
 
-// Índices para búsquedas eficientes
-PaymentSchema.index({ userId: 1, createdAt: -1 });
-PaymentSchema.index({ isPaymentRequest: 1, status: 1 });
-
 const Payment = mongoose.model<IPayment>("Payment", PaymentSchema);
 export default Payment;
