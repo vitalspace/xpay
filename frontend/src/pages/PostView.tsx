@@ -14,6 +14,7 @@ import { Toast } from "../components/ui/Toast";
 import { getPaywallClient } from "../contracts/paywall_contract";
 import { networkPassphrase } from "../contracts/util";
 import { useWallet } from "../hooks/useWallet";
+import { paymentService } from "../services/api";
 import { wallet } from "../util/wallet";
 
 export const PostView: React.FC = () => {
@@ -48,37 +49,8 @@ export const PostView: React.FC = () => {
 
   const loadPost = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:4000/api/v1/post/${postId}`,
-        {
-          headers: address ? { "x-user-address": address } : {},
-        }
-      );
-
-      if (response.status === 402) {
-        // Payment required
-        const data = await response.json();
-        setPost({
-          paymentRequestId: postId!,
-          amount: data.paymentDetails.amount,
-          asset: data.paymentDetails.asset,
-          destination: data.paymentDetails.destination,
-          memo: undefined,
-          status: "pending",
-          createdAt: new Date().toISOString(),
-          userAddress: "",
-          title: data.paymentDetails.title,
-          content: undefined, // Content not available until payment
-          hasAccess: false,
-        });
-      } else if (response.ok) {
-        // Has access or is creator
-        const data = await response.json();
-        setPost(data);
-      } else {
-        // Other error
-        setToast({ message: "Post not found", type: "error" });
-      }
+      const data = await paymentService.getPost(postId!, address);
+      setPost(data);
     } catch (error) {
       console.error("Error loading post:", error);
       setToast({ message: "Post not found", type: "error" });
