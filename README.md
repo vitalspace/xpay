@@ -27,8 +27,6 @@ Xpay is a comprehensive payment platform that combines peer-to-peer XLM transfer
 - **Payment History**: Track all transactions and payment requests
 - **Active Payments**: Monitor pending payment requests with shareable links
 
-## 🏗️ Architecture</search></search></search>
-</search_and_replace>
 
 ## 🏗️ Architecture
 
